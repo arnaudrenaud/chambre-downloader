@@ -5,14 +5,15 @@ const path = require("path");
 const ytdl = require("ytdl-core");
 
 const YOUTUBE_DATA_API_KEY = process.env.YOUTUBE_DATA_API_KEY;
-const DOWNLOAD_VIDEOS_DIRECTORY = "downloaded-videos";
+const DOWNLOADED_VIDEOS_DIRECTORY =
+  process.env.DOWNLOADED_VIDEOS_DIRECTORY || "downloaded-videos";
 
-if (!fs.existsSync(DOWNLOAD_VIDEOS_DIRECTORY)) {
-  fs.mkdirSync(DOWNLOAD_VIDEOS_DIRECTORY);
+if (!fs.existsSync(DOWNLOADED_VIDEOS_DIRECTORY)) {
+  fs.mkdirSync(DOWNLOADED_VIDEOS_DIRECTORY);
 }
 
 const PATH_TO_WRITE_TO = path.join(
-  DOWNLOAD_VIDEOS_DIRECTORY,
+  DOWNLOADED_VIDEOS_DIRECTORY,
   new Date().toISOString().replace(/:/g, "-")
 );
 fs.mkdirSync(PATH_TO_WRITE_TO);
