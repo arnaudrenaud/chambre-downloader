@@ -3,8 +3,8 @@ const fetch = require("node-fetch");
 const fs = require("fs");
 const path = require("path");
 const ytdl = require("ytdl-core");
-const { downloadFromInfo } = require("ytdl-core");
 
+const YOUTUBE_DATA_API_KEY = process.env.YOUTUBE_DATA_API_KEY;
 const DOWNLOAD_VIDEOS_DIRECTORY = "downloaded-videos";
 
 if (!fs.existsSync(DOWNLOAD_VIDEOS_DIRECTORY)) {
@@ -25,9 +25,7 @@ const getVideoIds = async () => {
   );
   const searchKeyword = process.env.SEARCH_KEYWORD || "chambre";
   const response = await fetch(
-    `https://www.googleapis.com/youtube/v3/search?order=date&publishedAfter=${startDate.toISOString()}&q=${searchKeyword}&maxResults=50&key=${
-      process.env.YOUTUBE_DATA_API_KEY
-    }`,
+    `https://www.googleapis.com/youtube/v3/search?order=date&publishedAfter=${startDate.toISOString()}&q=${searchKeyword}&maxResults=50&key=${YOUTUBE_DATA_API_KEY}`,
     {
       headers: {
         Accept: "application/json",
@@ -38,19 +36,37 @@ const getVideoIds = async () => {
   return searchResults.items.map((item) => item.id.videoId);
 };
 
-const downloadVideos = (videoIds) => {
-  videoIds.forEach(async (videoId) => {
-    const videoUrl = `http://www.youtube.com/watch?v=${videoId}`;
-    console.log(`Downloading video for ${videoUrl}`);
-    ytdl(videoUrl).pipe(
-      fs.createWriteStream(path.join(PATH_TO_WRITE_TO, `${videoId}.mp4`))
-    );
-  });
+const downloadInfo = async (videoId) => {
+  console.log(`Downloading info for ${videoId}`);
+  const response = await fetch(
+    `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_DATA_API_KEY}`,
+    {
+      headers: {
+        Accept: "application/json",
+      },
+    }
+  );
+  const videoInfo = await response.json();
+  fs.writeFileSync(
+    path.join(PATH_TO_WRITE_TO, `${videoId}.json`),
+    JSON.stringify(videoInfo, null, 2)
+  );
+};
+
+const downloadVideo = (videoId) => {
+  console.log(`Downloading video for ${videoId}`);
+  const videoUrl = `http://www.youtube.com/watch?v=${videoId}`;
+  ytdl(videoUrl).pipe(
+    fs.createWriteStream(path.join(PATH_TO_WRITE_TO, `${videoId}.mp4`))
+  );
 };
 
 const downloadVideosAndInfo = async () => {
   const videoIds = await getVideoIds();
-  downloadVideos(videoIds);
+  videoIds.forEach(async (videoId) => {
+    downloadInfo(videoId);
+    downloadVideo(videoId);
+  });
 };
 
 downloadVideosAndInfo();
