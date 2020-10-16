@@ -34,11 +34,25 @@ const getVideoIds = async () => {
     }
   );
   const searchResults = await response.json();
+  // console.dir(searchResults, {depth:null});
   return searchResults.items.map((item) => item.id.videoId);
 };
 
-const downloadInfo = async (videoId) => {
-  console.log(`Downloading info for ${videoId}`);
+const fetchChannelStatistics = async (channelId) => {
+  const response = await fetch (
+      `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${channelId}&key=${YOUTUBE_DATA_API_KEY}`,
+      {
+      headers: {
+          Accept: "application/json",
+        },
+      }
+    );
+  const results = await response.json();
+  return results;
+}
+
+const fetchVideoCompleteInfo = async (videoId) => {
+  console.log(`Fetching info for ${videoId}`);
   const response = await fetch(
     `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${YOUTUBE_DATA_API_KEY}`,
     {
@@ -48,11 +62,19 @@ const downloadInfo = async (videoId) => {
     }
   );
   const videoInfo = await response.json();
+
+  const channelId = videoInfo.items[0].snippet.channelId
+  const channelStatistics = await fetchChannelStatistics(channelId);
+
+  return {videoInfo, channelStatistics};
+};
+
+const writeVideoCompleteInfo = (videoId, info) => {
   fs.writeFileSync(
     path.join(PATH_TO_WRITE_TO, `${videoId}.json`),
-    JSON.stringify(videoInfo, null, 2)
+    JSON.stringify(info, null, 2)
   );
-};
+}
 
 const downloadVideo = (videoId) => {
   console.log(`Downloading video for ${videoId}`);
@@ -65,8 +87,14 @@ const downloadVideo = (videoId) => {
 const downloadVideosAndInfo = async () => {
   const videoIds = await getVideoIds();
   videoIds.forEach(async (videoId) => {
-    downloadInfo(videoId);
-    downloadVideo(videoId);
+    const videoCompleteInfo = await fetchVideoCompleteInfo(videoId);
+    const channelSubscriberCount = parseInt(videoCompleteInfo.channelStatistics.items[0].statistics.subscriberCount, 10);
+
+    console.log(`${videoId}'s channel has ${channelSubscriberCount} subscribers`)
+    if (channelSubscriberCount < (process.env.CHANNEL_SUBSCRIBER_COUNT_LIMIT || 150)) {  
+      writeVideoCompleteInfo(videoId, videoCompleteInfo); 
+      downloadVideo(videoId);
+    }    
   });
 };
 

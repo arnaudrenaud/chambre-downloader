@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "dotenv": "^8.2.0",
+    "minimist": "^1.2.5",
     "node-fetch": "^2.6.1",
     "ytdl-core": "^3.3.0"
   }
