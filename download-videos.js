@@ -1,6 +1,7 @@
 require("dotenv").config();
 const fetch = require("node-fetch");
 const fs = require("fs");
+const minimist = require("minimist");
 const path = require("path");
 const ytdl = require("ytdl-core");
 
@@ -54,6 +55,33 @@ const downloadInfo = async (videoId) => {
   );
 };
 
+const addToPlaylist = async (videoId, playlistId) => {
+  const response = await fetch(
+    `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&key=${YOUTUBE_DATA_API_KEY}`,
+    {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+      },
+      body: {
+        snippet: {
+          playlistId,
+          resourceId: {
+            kind: "youtube#video",
+            videoId,
+          },
+        },
+      },
+    }
+  );
+  if (response.ok) {
+    console.log(`Successfully added video ${videoId} to playlist`);
+  } else {
+    const errorMessage = await response.text();
+    console.log(`Could not add video ${videoId} to playlist: `, errorMessage);
+  }
+};
+
 const downloadVideo = (videoId) => {
   console.log(`Downloading video for ${videoId}`);
   const videoUrl = `http://www.youtube.com/watch?v=${videoId}`;
@@ -63,9 +91,11 @@ const downloadVideo = (videoId) => {
 };
 
 const downloadVideosAndInfo = async () => {
+  const scriptArguments = minimist(process.argv.slice(2));
   const videoIds = await getVideoIds();
   videoIds.forEach(async (videoId) => {
     downloadInfo(videoId);
+    addToPlaylist(videoId, scriptArguments.playlistId);
     downloadVideo(videoId);
   });
 };
