@@ -15,5 +15,5 @@ Create a `.env` file and set values based on `.env.example`.
 ## Usage
 
 ```
-node download-videos.js
+node download-videos.js --searchKeyword your+requested+keywords
 ```

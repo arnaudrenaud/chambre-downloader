@@ -1,6 +1,7 @@
 require("dotenv").config();
 const fetch = require("node-fetch");
 const fs = require("fs");
+const minimist = require("minimist");
 const path = require("path");
 const ytdl = require("ytdl-core");
 
@@ -18,13 +19,14 @@ const PATH_TO_WRITE_TO = path.join(
 );
 fs.mkdirSync(PATH_TO_WRITE_TO);
 
-const getVideoIds = async () => {
+const getVideoIds = async (keyword) => {
   const searchForXLastHours = process.env.SEARCH_FOR_X_LAST_HOURS || 2;
   const now = new Date();
   const startDate = new Date(
     now.setHours(now.getHours() - searchForXLastHours)
   );
-  const searchKeyword = process.env.SEARCH_KEYWORD || "chambre";
+  const searchKeyword = keyword;
+  console.log(`searchKeyword is ${searchKeyword}`);   
   const response = await fetch(
     `https://www.googleapis.com/youtube/v3/search?order=date&publishedAfter=${startDate.toISOString()}&q=${searchKeyword}&maxResults=50&key=${YOUTUBE_DATA_API_KEY}`,
     {
@@ -85,7 +87,8 @@ const downloadVideo = (videoId) => {
 };
 
 const downloadVideosAndInfo = async () => {
-  const videoIds = await getVideoIds();
+  const scriptArguments = minimist(process.argv.slice(2));
+  const videoIds = await getVideoIds(scriptArguments.searchKeyword);
   videoIds.forEach(async (videoId) => {
     const videoCompleteInfo = await fetchVideoCompleteInfo(videoId);
     const channelSubscriberCount = parseInt(videoCompleteInfo.channelStatistics.items[0].statistics.subscriberCount, 10);
@@ -94,7 +97,7 @@ const downloadVideosAndInfo = async () => {
     if (channelSubscriberCount < (process.env.CHANNEL_SUBSCRIBER_COUNT_LIMIT || 150)) {  
       writeVideoCompleteInfo(videoId, videoCompleteInfo); 
       downloadVideo(videoId);
-    }    
+    }
   });
 };
 
