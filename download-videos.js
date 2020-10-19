@@ -9,17 +9,20 @@ const YOUTUBE_DATA_API_KEY = process.env.YOUTUBE_DATA_API_KEY;
 const DOWNLOADED_VIDEOS_DIRECTORY =
   process.env.DOWNLOADED_VIDEOS_DIRECTORY || "downloaded-videos";
 
+const scriptArguments = minimist(process.argv.slice(2));
+
+
 if (!fs.existsSync(DOWNLOADED_VIDEOS_DIRECTORY)) {
   fs.mkdirSync(DOWNLOADED_VIDEOS_DIRECTORY);
 }
 
 const PATH_TO_WRITE_TO = path.join(
   DOWNLOADED_VIDEOS_DIRECTORY,
-  new Date().toISOString().replace(/:/g, "-")
+  (new Date().toISOString().replace(/:/g, "-")+(`_${scriptArguments.k}`)+(`_${scriptArguments.l}`))
 );
 fs.mkdirSync(PATH_TO_WRITE_TO);
 
-const getVideoIds = async (keyword, limit) => {
+const getVideoIds = async (keyword) => {
   const searchForXLastHours = process.env.SEARCH_FOR_X_LAST_HOURS || 2;
   const now = new Date();
   const startDate = new Date(
@@ -87,11 +90,10 @@ const downloadVideo = (videoId) => {
 };
 
 const downloadVideosAndInfo = async () => {
-  const scriptArguments = minimist(process.argv.slice(2));
 
-  const videoIds = await getVideoIds(scriptArguments.searchKeyword);
+  const videoIds = await getVideoIds(scriptArguments.k);
   
-  const channelSubscriberLimit = scriptArguments.channelSubscriberLimit;
+  const channelSubscriberLimit = scriptArguments.l;
   console.log(`the channel's subscriber count limit is set on ${channelSubscriberLimit}`)
 
   videoIds.forEach(async (videoId) => {
@@ -104,6 +106,7 @@ const downloadVideosAndInfo = async () => {
       downloadVideo(videoId);
     }
   });
+
 };
 
 downloadVideosAndInfo();
