@@ -81,11 +81,11 @@ const writeVideoCompleteInfo = (videoId, info) => {
   );
 }
 
-const downloadVideo = (videoId) => {
+const downloadVideo = (videoId, videoTitle, channelSubscriberCount) => {
   console.log(`Downloading video for ${videoId}`);
   const videoUrl = `http://www.youtube.com/watch?v=${videoId}`;
   ytdl(videoUrl).pipe(
-    fs.createWriteStream(path.join(PATH_TO_WRITE_TO, `${videoId}.mp4`))
+    fs.createWriteStream(path.join(PATH_TO_WRITE_TO, `${videoId}_${videoTitle}_${channelSubscriberCount}.mp4`))
   );
 };
 
@@ -98,12 +98,13 @@ const downloadVideosAndInfo = async () => {
 
   videoIds.forEach(async (videoId) => {
     const videoCompleteInfo = await fetchVideoCompleteInfo(videoId);
+    const videoTitle = String(videoCompleteInfo.videoInfo.items[0].snippet.title);
     const channelSubscriberCount = parseInt(videoCompleteInfo.channelStatistics.items[0].statistics.subscriberCount, 10);
 
-    console.log(`${videoId}'s channel has ${channelSubscriberCount} subscribers`)
+    console.log(`${videoId}'s channel has ${channelSubscriberCount} subscribers. Title is ${videoTitle}`)
     if (channelSubscriberCount < (channelSubscriberLimit || 150)) {  
       writeVideoCompleteInfo(videoId, videoCompleteInfo); 
-      downloadVideo(videoId);
+      downloadVideo(videoId, videoTitle,channelSubscriberCount);
     }
   });
 
